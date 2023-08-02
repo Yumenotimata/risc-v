@@ -42,6 +42,7 @@ module Core(
 
     integer i;
     initial begin
+        inst <= 32'd0;
         addr <= 32'd0;
         stage <= 2'd0;
         load <= 1'd1;
@@ -132,6 +133,12 @@ module Core(
             `ADD    :   alu_out <= {rs1 + rs2};
             `SUB    :   alu_out <= {rs1 - rs2};
             `ADDI   :   alu_out <= {rs1 + imm_i_sext};
+            `AND    :   alu_out <= {rs1 & rs2};
+            `OR     :   alu_out <= {rs1 | rs2};
+            `XOR    :   alu_out <= {rs1 ^ rs2};
+            `ANDI   :   alu_out <= {rs1 & imm_i_sext};
+            `ORI    :   alu_out <= {rs1 | imm_i_sext};
+            `XORI   :   alu_out <= {rs1 ^ imm_i_sext};
         endcase
     end
     endtask
@@ -162,6 +169,13 @@ module Core(
             `LW     :   register[rd_addr] <= d_mem_data;
             `ADD    :   register[rd_addr] <= alu_out;
             `SUB    :   register[rd_addr] <= alu_out;
+            `ADDI   :   register[rd_addr] <= alu_out;
+            `AND    :   register[rd_addr] <= alu_out;
+            `OR     :   register[rd_addr] <= alu_out;
+            `XOR    :   register[rd_addr] <= alu_out;
+            `ANDI   :   register[rd_addr] <= alu_out;
+            `ORI    :   register[rd_addr] <= alu_out;
+            `XORI   :   register[rd_addr] <= alu_out;
         endcase
     end
     endtask
