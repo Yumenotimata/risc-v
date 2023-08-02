@@ -33,9 +33,9 @@ module Core(
     reg [12:0] imm_s;
     reg [31:0] imm_s_sext;
     reg [31:0] imm_i_sext;
-    reg [31:0] rs1;
-    reg [31:0] rs2;
-    reg [31:0] rd;
+    reg signed [31:0] rs1;
+    reg signed [31:0] rs2;
+    reg signed [31:0] rd;
 
     //ALU
     reg [31:0] alu_out;
@@ -55,6 +55,7 @@ module Core(
         for(i=0;i<32;i++) begin
             register[i] <= i;
         end
+        register[4] <= 32'h80800000;
     end
 
     Memory memory(
@@ -139,6 +140,9 @@ module Core(
             `ANDI   :   alu_out <= {rs1 & imm_i_sext};
             `ORI    :   alu_out <= {rs1 | imm_i_sext};
             `XORI   :   alu_out <= {rs1 ^ imm_i_sext};
+            `SLL    :   alu_out <= {32'hffffffff & {rs1 << rs2[4:0]}};
+            `SRL    :   alu_out <= {32'hffffffff & {rs1 >> rs2[4:0]}};
+            `SRA    :   alu_out <= {rs1 >>> rs2[4:0]};
         endcase
     end
     endtask
@@ -176,6 +180,9 @@ module Core(
             `ANDI   :   register[rd_addr] <= alu_out;
             `ORI    :   register[rd_addr] <= alu_out;
             `XORI   :   register[rd_addr] <= alu_out;
+            `SLL    :   register[rd_addr] <= alu_out;
+            `SRL    :   register[rd_addr] <= alu_out;
+            `SRA    :   register[rd_addr] <= alu_out;
         endcase
     end
     endtask
