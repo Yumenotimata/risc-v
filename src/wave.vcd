@@ -1,5 +1,5 @@
 $date
-	Wed Aug  2 21:44:39 2023
+	Thu Aug  3 02:26:32 2023
 $end
 $version
 	Icarus Verilog
@@ -12,30 +12,384 @@ $scope module core $end
 $var wire 1 ! clk $end
 $var wire 1 " rst $end
 $var wire 32 # mem_data [31:0] $end
-$var reg 32 $ addr [31:0] $end
-$var reg 1 % load $end
-$var reg 32 & pc [31:0] $end
-$var reg 3 ' stage [2:0] $end
+$var wire 32 $ d_mem_data [31:0] $end
+$var reg 32 % addr [31:0] $end
+$var reg 32 & alu_out [31:0] $end
+$var reg 32 ' d_addr [31:0] $end
+$var reg 1 ( d_load $end
+$var reg 13 ) imm_i [12:0] $end
+$var reg 32 * imm_i_sext [31:0] $end
+$var reg 13 + imm_s [12:0] $end
+$var reg 32 , imm_s_sext [31:0] $end
+$var reg 32 - inst [31:0] $end
+$var reg 1 . load $end
+$var reg 32 / pc [31:0] $end
+$var reg 32 0 rd [31:0] $end
+$var reg 5 1 rd_addr [4:0] $end
+$var reg 32 2 rs1 [31:0] $end
+$var reg 5 3 rs1_addr [4:0] $end
+$var reg 32 4 rs2 [31:0] $end
+$var reg 5 5 rs2_addr [4:0] $end
+$var reg 3 6 stage [2:0] $end
+$var reg 32 7 w_data [31:0] $end
+$var reg 1 8 wen $end
+$var integer 32 9 i [31:0] $end
 $scope module memory $end
-$var wire 32 ( addr [31:0] $end
-$var wire 1 % load $end
-$var reg 32 ) data [31:0] $end
+$var wire 32 : addr [31:0] $end
+$var wire 32 ; d_addr [31:0] $end
+$var wire 1 ( d_load $end
+$var wire 1 . load $end
+$var wire 32 < w_data [31:0] $end
+$var wire 1 8 wen $end
+$var reg 32 = d_data [31:0] $end
+$var reg 32 > data [31:0] $end
+$upscope $end
+$scope task Excution $end
 $upscope $end
 $scope task IntructionDecode $end
 $upscope $end
 $scope task IntructionFetch $end
+$upscope $end
+$scope task MemoryAccess $end
+$upscope $end
+$scope task WriteBack $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$var reg 32 ? \register[0] [31:0] $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$var reg 32 @ \register[1] [31:0] $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$var reg 32 A \register[2] [31:0] $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$var reg 32 B \register[3] [31:0] $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$var reg 32 C \register[4] [31:0] $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$var reg 32 D \register[5] [31:0] $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$var reg 32 E \register[6] [31:0] $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$var reg 32 F \register[7] [31:0] $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 G \m[0] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 H \m[1] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 I \m[2] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 J \m[3] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 K \m[4] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 L \m[5] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 M \m[6] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 N \m[7] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 O \m[8] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 P \m[9] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 Q \m[10] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 R \m[11] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 S \m[12] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 T \m[13] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 U \m[14] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 V \m[15] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 W \m[16] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 X \m[17] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 Y \m[18] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 Z \m[19] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 [ \m[20] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 \ \m[21] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 ] \m[22] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 ^ \m[23] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 _ \m[24] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 ` \m[25] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 a \m[26] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 b \m[27] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 c \m[28] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 d \m[29] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 e \m[30] [7:0] $end
+$upscope $end
+$upscope $end
+$upscope $end
+$scope module startup $end
+$scope module core $end
+$scope module memory $end
+$var reg 8 f \m[31] [7:0] $end
 $upscope $end
 $upscope $end
 $upscope $end
 $enddefinitions $end
 #0
 $dumpvars
+bx f
+bx e
+bx d
+bx c
+bx b
+bx a
+bx `
+bx _
+bx ^
+bx ]
+bx \
+bx [
+bx Z
+bx Y
+bx X
+bx W
+bx V
+bx U
+bx T
+bx S
+bx R
+bx Q
+bx P
+bx O
+b0 N
+b100000 M
+b10000010 L
+b110011 K
+b0 J
+b100000 I
+b10100001 H
+b10000011 G
+b111 F
+b110 E
+b101 D
+b100 C
+b11 B
+b10 A
+b1 @
+b0 ?
+bx >
+bx =
+b0 <
+bx ;
+b0 :
+b100000 9
+18
+b0 7
+bx 6
+b0 5
+bx 4
+b0 3
+bx 2
+b0 1
+bx 0
+bx /
+1.
+bx -
+bx ,
+bx +
+bx *
 bx )
-b0 (
+1(
 bx '
 bx &
-1%
-b0 $
+b0 %
+bx $
 bx #
 0"
 1!
@@ -48,243 +402,277 @@ $end
 #15000
 0!
 #20000
-b0 '
-b0 &
+b0 6
+b0 /
 0"
 1!
 #25000
 0!
 #30000
-b10100000100110001001000010001 #
-b10100000100110001001000010001 )
-0%
-b100 &
-b1 '
+b1000001010000110000011 #
+b1000001010000110000011 >
+0.
+b100 /
+b1 6
 1!
 #35000
 0!
 #40000
-1%
-b10 '
+b11 0
+b10 4
+b1 2
+b11 ,
+b10 *
+b11 +
+b10 )
+b11 1
+b10 5
+b1 3
+1.
+b1000001010000110000011 -
+b10 6
 1!
 #45000
 0!
 #50000
-b11 '
+b11 &
+b11 6
 1!
 #55000
 0!
 #60000
-b100 '
+b100000100000100011001100000000 $
+b100000100000100011001100000000 =
+0(
+b11 '
+b11 ;
+b100 6
 1!
 #65000
 0!
 #70000
-b0 '
+b100000100000100011001100000000 B
+1(
+b0 6
 1!
 #75000
 0!
 #80000
-b100100001000110010001000100001 #
-b100100001000110010001000100001 )
-0%
-b100 $
-b100 (
-b1000 &
-b1 '
+b1000001000001000110011 #
+b1000001000001000110011 >
+0.
+b100 %
+b100 :
+b1000 /
+b1 6
 1!
 #85000
 0!
 #90000
-1%
-b10 '
+b100 0
+b100 ,
+b100 +
+b100 1
+1.
+b1000001000001000110011 -
+b10 6
 1!
 #95000
 0!
 #100000
-b11 '
+b11 6
 1!
 #105000
 0!
 #110000
-b100 '
+b100 6
 1!
 #115000
 0!
 #120000
-b0 '
+b11 C
+b0 6
 1!
 #125000
 0!
 #130000
-b110100001100110011001000110001 #
-b110100001100110011001000110001 )
-0%
-b1000 $
-b1000 (
-b1100 &
-b1 '
+bx #
+bx >
+0.
+b1000 %
+b1000 :
+b1100 /
+b1 6
 1!
 #135000
 0!
 #140000
-1%
-b10 '
+bx 0
+bx 4
+bx 2
+bx ,
+bx *
+b0xxxxxxxxxxxx +
+b0xxxxxxxxxxxx )
+bx 1
+bx 5
+bx 3
+1.
+bx -
+b10 6
 1!
 #145000
 0!
 #150000
-b11 '
+b11 6
 1!
 #155000
 0!
 #160000
-b100 '
+b100 6
 1!
 #165000
 0!
 #170000
-b0 '
+b0 6
 1!
 #175000
 0!
 #180000
-bx #
-bx )
-0%
-b1100 $
-b1100 (
-b10000 &
-b1 '
+0.
+b1100 %
+b1100 :
+b10000 /
+b1 6
 1!
 #185000
 0!
 #190000
-1%
-b10 '
+1.
+b10 6
 1!
 #195000
 0!
 #200000
-b11 '
+b11 6
 1!
 #205000
 0!
 #210000
-b100 '
+b100 6
 1!
 #215000
 0!
 #220000
-b0 '
+b0 6
 1!
 #225000
 0!
 #230000
-0%
-b10000 $
-b10000 (
-b10100 &
-b1 '
+0.
+b10000 %
+b10000 :
+b10100 /
+b1 6
 1!
 #235000
 0!
 #240000
-1%
-b10 '
+1.
+b10 6
 1!
 #245000
 0!
 #250000
-b11 '
+b11 6
 1!
 #255000
 0!
 #260000
-b100 '
+b100 6
 1!
 #265000
 0!
 #270000
-b0 '
+b0 6
 1!
 #275000
 0!
 #280000
-0%
-b10100 $
-b10100 (
-b11000 &
-b1 '
+0.
+b10100 %
+b10100 :
+b11000 /
+b1 6
 1!
 #285000
 0!
 #290000
-1%
-b10 '
+1.
+b10 6
 1!
 #295000
 0!
 #300000
-b11 '
+b11 6
 1!
 #305000
 0!
 #310000
-b100 '
+b100 6
 1!
 #315000
 0!
 #320000
-b0 '
+b0 6
 1!
 #325000
 0!
 #330000
-0%
-b11000 $
-b11000 (
-b11100 &
-b1 '
+0.
+b11000 %
+b11000 :
+b11100 /
+b1 6
 1!
 #335000
 0!
 #340000
-1%
-b10 '
+1.
+b10 6
 1!
 #345000
 0!
 #350000
-b11 '
+b11 6
 1!
 #355000
 0!
 #360000
-b100 '
+b100 6
 1!
 #365000
 0!
 #370000
-b0 '
+b0 6
 1!
 #375000
 0!
 #380000
-0%
-b11100 $
-b11100 (
-b100000 &
-b1 '
+0.
+b11100 %
+b11100 :
+b100000 /
+b1 6
 1!
 #385000
 0!
 #390000
-1%
-b10 '
+1.
+b10 6
 1!
 #395000
 0!
 #400000
-b11 '
+b11 6
 1!

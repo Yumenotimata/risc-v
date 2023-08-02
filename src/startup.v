@@ -14,10 +14,17 @@ module startup;
         .rst(rst)
         );
 
+    integer i;
     initial
         begin
             $dumpfile("wave.vcd");
             $dumpvars(0,core);
+            for(i=0;i<8;i++) begin
+                $dumpvars(1,core.register[i]);
+            end
+            for(i=0;i<32;i++) begin
+                $dumpvars(2,core.memory.m[i]);
+            end
             $monitor("pc");
         end
 
