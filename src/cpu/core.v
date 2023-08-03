@@ -31,8 +31,8 @@ module Core(
     reg [4:0] rd_addr;
     reg [12:0] imm_i;
     reg [12:0] imm_s;
-    reg [31:0] imm_s_sext;
-    reg [31:0] imm_i_sext;
+    reg signed [31:0] imm_s_sext;
+    reg signed [31:0] imm_i_sext;
     reg signed [31:0] rs1;
     reg signed [31:0] rs2;
     reg signed [31:0] rd;
@@ -55,7 +55,6 @@ module Core(
         for(i=0;i<32;i++) begin
             register[i] <= i;
         end
-        register[4] <= 32'h80800000;
     end
 
     Memory memory(
@@ -140,9 +139,16 @@ module Core(
             `ANDI   :   alu_out <= {rs1 & imm_i_sext};
             `ORI    :   alu_out <= {rs1 | imm_i_sext};
             `XORI   :   alu_out <= {rs1 ^ imm_i_sext};
-            `SLL    :   alu_out <= {32'hffffffff & {rs1 << rs2[4:0]}};
-            `SRL    :   alu_out <= {32'hffffffff & {rs1 >> rs2[4:0]}};
+            `SLL    :   alu_out <= {rs1 << rs2[4:0]};
+            `SRL    :   alu_out <= {rs1 >> rs2[4:0]};
             `SRA    :   alu_out <= {rs1 >>> rs2[4:0]};
+            `SLLI   :   alu_out <= {rs1 << imm_i_sext[4:0]};
+            `SRLI   :   alu_out <= {rs1 >> imm_i_sext[4:0]};
+            `SRAI   :   alu_out <= {rs1 >>> imm_i_sext[4:0]};
+            `SLT    :   alu_out <= {($signed({1'b0,rs1}) < $signed({1'b0,rs2})) ? 32'b1 : 32'b0};
+            `SLTU   :   alu_out <= {(rs1 < rs2) ? 32'b1 : 32'b0};
+            `SLTI   :   alu_out <= {($signed({1'b0,rs1}) < $signed({1'b0,imm_i_sext})) ? 32'b1 : 32'b0};
+            `SLTIU  :   alu_out <= {(rs1 < imm_i_sext) ? 32'b1 : 32'b0};
         endcase
     end
     endtask
@@ -169,6 +175,7 @@ module Core(
     begin
         d_load <= 1'b1;
         wen <= 1'b1;
+        // too bad
         casez(inst)
             `LW     :   register[rd_addr] <= d_mem_data;
             `ADD    :   register[rd_addr] <= alu_out;
@@ -183,6 +190,13 @@ module Core(
             `SLL    :   register[rd_addr] <= alu_out;
             `SRL    :   register[rd_addr] <= alu_out;
             `SRA    :   register[rd_addr] <= alu_out;
+            `SLLI   :   register[rd_addr] <= alu_out;
+            `SRLI   :   register[rd_addr] <= alu_out;
+            `SRAI   :   register[rd_addr] <= alu_out;
+            `SLT    :   register[rd_addr] <= alu_out;
+            `SLTU   :   register[rd_addr] <= alu_out;
+            `SLTI   :   register[rd_addr] <= alu_out;
+            `SLTIU  :   register[rd_addr] <= alu_out;
         endcase
     end
     endtask
