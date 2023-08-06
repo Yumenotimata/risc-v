@@ -33,6 +33,8 @@ module Core(
     reg [12:0] imm_s;
     reg signed [31:0] imm_s_sext;
     reg signed [31:0] imm_i_sext;
+    reg signed [31:0] imm_b_sext;
+    reg [11:0] imm_b;
     reg signed [31:0] rs1;
     reg signed [31:0] rs2;
     reg signed [31:0] rd;
@@ -51,6 +53,8 @@ module Core(
         rs1_addr <= 5'd0;
         rs2_addr <= 5'd0;
         rd_addr <= 5'd0;
+        addr <= 32'd0;
+        pc <= 32'd0;
         wen <= 1'd1;
         for(i=0;i<32;i++) begin
             register[i] <= i;
@@ -113,11 +117,13 @@ module Core(
             rs2_addr <= mem_data[24:20];
             rd_addr <= mem_data[11:7];
             imm_i <= mem_data[31:20];
-            imm_s <= {{mem_data[31:25]},{mem_data[11:7]}};
+            imm_s <= {mem_data[31:25],mem_data[11:7]};
+            imm_b <= {12{mem_data[31]}};
             //sign extension
             //{} -> materialization?
             imm_i_sext <= {{20{mem_data[31]}},mem_data[31:20]};
             imm_s_sext <= {{20{mem_data[31]}},{mem_data[31:25],mem_data[11:7]}};
+            imm_b_sext <= {{20{mem_data[31]}},{mem_data[31],mem_data[7],mem_data[30:25],mem_data[11:8]}};
             //direct load
             rs1 <= register[mem_data[19:15]];
             rs2 <= register[mem_data[24:20]];
@@ -149,6 +155,24 @@ module Core(
             `SLTU   :   alu_out <= {(rs1 < rs2) ? 32'b1 : 32'b0};
             `SLTI   :   alu_out <= {($signed({1'b0,rs1}) < $signed({1'b0,imm_i_sext})) ? 32'b1 : 32'b0};
             `SLTIU  :   alu_out <= {(rs1 < imm_i_sext) ? 32'b1 : 32'b0};
+            `BEQ    :   
+                begin
+                    if(rs1 == rs2) begin
+                        pc <= pc + imm_b_sext;
+                    end
+                end            
+            `BGE    :   
+                begin
+                    if(($signed({1'b0,rs1})) >= ($signed({1'b0,rs2}))) begin
+                        pc <= pc + imm_b_sext;
+                    end
+                end
+            `BGEU   :
+                begin
+                    if(rs1 >= rs2) begin
+                        pc <= pc + imm_b_sext;
+                    end
+                end
         endcase
     end
     endtask
@@ -197,6 +221,12 @@ module Core(
             `SLTU   :   register[rd_addr] <= alu_out;
             `SLTI   :   register[rd_addr] <= alu_out;
             `SLTIU  :   register[rd_addr] <= alu_out;
+            `BEQ    :   register[rd_addr] <= alu_out;
+            `BNE    :   register[rd_addr] <= alu_out;
+            `BLT    :   register[rd_addr] <= alu_out;
+            `BGE    :   register[rd_addr] <= alu_out;
+            `BLTU   :   register[rd_addr] <= alu_out;
+            `BGEU   :   register[rd_addr] <= alu_out;
         endcase
     end
     endtask
