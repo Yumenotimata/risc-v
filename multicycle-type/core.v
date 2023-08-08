@@ -1,5 +1,7 @@
 `include "consts.h"
 `include "regfile.v"
+`include "memory.v"
+`include "decoder.v"
 
 module Core(
     input clk,
@@ -19,6 +21,24 @@ module Core(
         .reg_write_data(reg_write_data)
     );
 
+    //Program Memory
+    wire [31:0] memory_out_addr,memory_out_data,memory_write_addr,memory_write_data;
+    reg memory_write_enable;
+    Memory memory(
+        .clk(clk),
+        .memory_out_addr(memory_out_addr),
+        .memory_out_data(memory_out_data),
+        .memory_write_addr(memory_write_addr),
+        .memory_write_data(memory_write_data),
+        .memory_write_enable(memory_write_enable)
+    );
+
+    reg decoder_valid;
+    Decoder decoder(
+        .decoder_valid(decoder_valid),
+        .decode_instruction(memory_out_data)
+    );
+
     initial begin
         stage <= `IF;
     end
@@ -31,5 +51,11 @@ module Core(
             stage <= stage + 1; 
         end
     end
+
+    // always @(posedge clk) begin
+        // casez(stage)
+            // `IF     :   
+        // endcase
+    // end
 
 endmodule
