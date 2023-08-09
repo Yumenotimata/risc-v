@@ -19,8 +19,7 @@ module Core(
         for(i=0;i<32;i++) begin
             rs[i] <= i;
         end
-        //-2
-        rs[4] <= 32'b11111111111111111111111111111100;
+        rs[1] <= -32'd10;
     end
 
     reg [31:0] alu_out;
@@ -120,10 +119,14 @@ module Core(
                 `XORI   :   alu_out <= rs1 ^ imm_i_sext;
                 `SLL    :   alu_out <= rs1 << rs2[4:0];
                 `SRL    :   alu_out <= rs1 >> rs2[4:0];
-                `SRA    :   alu_out <= rs1 >>> rs2[4:0];
+                `SRA    :   alu_out <= $signed(rs1) >>> rs2[4:0];
                 `SLLI   :   alu_out <= rs1 << imm_i_sext[4:0];
                 `SRLI   :   alu_out <= rs1 >> imm_i_sext[4:0];
                 `SRAI   :   alu_out <= $signed(rs1) >>> imm_i_sext[4:0];
+                `SLT    :   alu_out <= {($signed(rs1) < $signed(rs2)) ? 32'b1 : 32'b0};
+                `SLTU   :   alu_out <= {(rs1 < rs2) ? 32'b1 : 32'b0};
+                `SLTI   :   alu_out <= {($signed(rs1) < $signed(imm_i_sext)) ? 32'b1 : 32'b0};
+                `SLTIU  :   alu_out <= {(rs1 < imm_i_sext) ? 32'b1 : 32'b0};
             endcase
         end
     endtask
@@ -152,7 +155,7 @@ module Core(
         begin
             casez(memory_read_data)
                 `LW     :   rs[rd_addr] <= memory_d_read_data;
-                `ADD,`SUB,`ADDI,`AND,`OR,`XOR,`ANDI,`ORI,`XORI,`SLL,`SRL,`SRA,`SLLI,`SRLI,`SRAI   :
+                `ADD,`SUB,`ADDI,`AND,`OR,`XOR,`ANDI,`ORI,`XORI,`SLL,`SRL,`SRA,`SLLI,`SRLI,`SRAI,`SLT,`SLTU,`SLTI,`SLTIU   :
                     begin
                         rs[rd_addr] <= alu_out;
                     end
