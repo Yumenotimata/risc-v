@@ -13,12 +13,21 @@ module startup;
         .clk(clk),
         .rst(rst)
         );
+    initial begin
+        $readmemh("memory.hex",core.memory.m,16'h0,16'hffff);
+    end
 
     integer i;
     initial
         begin
             $dumpfile("wave.vcd");
             $dumpvars(0,core);
+            for(i=0;i<32;i++) begin
+               $dumpvars(1,core.memory.m[i]);
+            end
+            for(i=0;i<31;i++) begin
+                $dumpvars(2,core.rs[i]);
+            end
         end
 
     initial
