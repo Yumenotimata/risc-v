@@ -19,8 +19,6 @@ module Core(
         for(i=0;i<32;i++) begin
             rs[i] <= i;
         end
-        rs[1] <= 32'h40;
-        rs[2] <= 32'h30;
     end
 
     reg [31:0] alu_out;
@@ -55,11 +53,13 @@ module Core(
     wire [4:0] rd_addr = memory_read_data[11:7];
     wire [31:0] rs1,rs2;
     wire [11:0] imm_i = memory_read_data[31:20];
-    wire [31:0] imm_i_sext = {{20{memory_read_data[31]}},imm_i};
+    wire [31:0] imm_i_sext = {{20{imm_i[11]}},imm_i};
     wire [11:0] imm_s = {memory_read_data[31:25],memory_read_data[11:7]};
-    wire [31:0] imm_s_sext = {{20{memory_read_data[31]}},imm_s};
+    wire [31:0] imm_s_sext = {{20{imm_s[11]}},imm_s};
     wire[12:0] imm_b = {memory_read_data[31],memory_read_data[7],{memory_read_data[30:25]},{memory_read_data[11:8]},{1'b0}};
-    wire [31:0] imm_b_sext = {{19{memory_read_data[31]}},imm_b};
+    wire [31:0] imm_b_sext = {{19{imm_b[12]}},imm_b};
+    wire [20:0] imm_j = {memory_read_data[31],memory_read_data[19:12],memory_read_data[20],memory_read_data[30:21],{1'b0}};
+    wire [31:0] imm_j_sext = {{11{imm_j[20]}},imm_j};
 
     always @(posedge clk) begin
         if((stage == `WB) || rst) begin
@@ -78,20 +78,27 @@ module Core(
             `MEM    :   MemoryAccess();
             `WB     :   WriteBack();
         endcase
+        rs[0] <= 32'b0;
     end
 
     //Instruction Fetch
     reg inc_flag = 1'b0;
-    reg [31:0] b_jmp = 32'b0;
-    reg b_jmp_flag = 1'b0;
+    reg [31:0] br_jmp = 32'b0;
+    reg br_flag = 1'b0;
+    reg [31:0] jmp = 32'b0;
+    reg jmp_flag = 1'b0;
     task Fetch;
         begin
-            if(inc_flag & !b_jmp_flag) begin
+            if(inc_flag & !br_flag) begin
                 pc <= pc + 4;
-            end else if(b_jmp_flag) begin
-                pc <= pc + b_jmp;
-                b_jmp_flag <= 1'b0;
-            end             
+            end else if(br_flag) begin
+                pc <= br_jmp;
+                br_flag <= 1'b0;
+            end
+            if(jmp_flag) begin
+                pc <= jmp; 
+                jmp_flag <= 1'b0;
+            end
             if(pc == 32'h0) begin
                inc_flag = 1'b1;
             end
@@ -137,12 +144,16 @@ module Core(
                 `SLTU   :   alu_out <= {(rs1 < rs2) ? 32'b1 : 32'b0};
                 `SLTI   :   alu_out <= {($signed(rs1) < $signed(imm_i_sext)) ? 32'b1 : 32'b0};
                 `SLTIU  :   alu_out <= {(rs1 < imm_i_sext) ? 32'b1 : 32'b0};
-                `BEQ    :   alu_out <= {(rs1 == rs2) ? imm_b_sext : 32'b0};
-                `BNE    :   alu_out <= {(rs1 != rs2) ? imm_b_sext : 32'b0};
-                `BLT    :   alu_out <= {($signed(rs1) < $signed(rs2)) ? imm_b_sext : 32'b0};
-                `BGE    :   alu_out <= {($signed(rs1) >= $signed(rs2)) ? imm_b_sext : 32'b0};
-                `BLTU   :   alu_out <= {(rs1 < rs2) ? imm_b_sext : 32'b0};
-                `BGEU   :   alu_out <= {(rs1 >= rs2) ? imm_b_sext : 32'b0};
+                //ジャンプ命令のジャンプアドレス先計算って、命令フェッチ時のプログラムカウンタをベースにしたほうがいい？わからん
+                //マルチサイクルなら問題ないけど、パイプライン実装したら命令フェッチ時のアドレスを逆算するだけでいいんかなしらんけど
+                `BEQ    :   alu_out <= {(rs1 == rs2) ? (imm_b_sext + pc) : 32'b0};
+                `BNE    :   alu_out <= {(rs1 != rs2) ? (imm_b_sext + pc) : 32'b0};
+                `BLT    :   alu_out <= {($signed(rs1) < $signed(rs2)) ? (imm_b_sext + pc) : 32'b0};
+                `BGE    :   alu_out <= {($signed(rs1) >= $signed(rs2)) ? (imm_b_sext + pc) : 32'b0};
+                `BLTU   :   alu_out <= {(rs1 < rs2) ? (imm_b_sext + pc) : 32'b0};
+                `BGEU   :   alu_out <= {(rs1 >= rs2) ? (imm_b_sext + pc) : 32'b0};
+                `JAL    :   alu_out <= pc + imm_j_sext;
+                `JALR   :   alu_out <= (rs[rs1_addr] + imm_i_sext) & (-32'b1);
             endcase
         end
     endtask
@@ -178,9 +189,16 @@ module Core(
                 `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU    :
                     begin
                         if(alu_out != 32'b0) begin
-                            b_jmp_flag <= 1'b1;
-                            b_jmp <= alu_out;
+                            br_flag <= 1'b1;
+                            br_jmp <= alu_out;
                         end
+                    end
+                `JAL,`JALR    :
+                    begin
+                        jmp_flag <= 1'b1;
+                        jmp <= alu_out;
+                        //ここ加算してるからALUで処理したいんだよなあ無理だけどｗ
+                        rs[rd_addr] <= pc + 32'd4;
                     end
             endcase
         end
