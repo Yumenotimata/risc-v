@@ -60,6 +60,8 @@ module Core(
     wire [31:0] imm_b_sext = {{19{imm_b[12]}},imm_b};
     wire [20:0] imm_j = {memory_read_data[31],memory_read_data[19:12],memory_read_data[20],memory_read_data[30:21],{1'b0}};
     wire [31:0] imm_j_sext = {{11{imm_j[20]}},imm_j};
+    wire [19:0] imm_u = memory_read_data[31:12];
+    wire [31:0] imm_u_shifted_sext = {imm_u,{12'b0}};
 
     always @(posedge clk) begin
         if((stage == `WB) || rst) begin
@@ -153,7 +155,9 @@ module Core(
                 `BLTU   :   alu_out <= {(rs1 < rs2) ? (imm_b_sext + pc) : 32'b0};
                 `BGEU   :   alu_out <= {(rs1 >= rs2) ? (imm_b_sext + pc) : 32'b0};
                 `JAL    :   alu_out <= pc + imm_j_sext;
-                `JALR   :   alu_out <= (rs[rs1_addr] + imm_i_sext) & (-32'b1);
+                `JALR   :   alu_out <= (rs[rs1_addr] + imm_i_sext) & (~32'b1);
+                `LUI    :   alu_out <= imm_u_shifted_sext;
+                `AUIPC  :   alu_out <= pc + imm_u_shifted_sext;
             endcase
         end
     endtask
@@ -197,8 +201,11 @@ module Core(
                     begin
                         jmp_flag <= 1'b1;
                         jmp <= alu_out;
-                        //‚±‚±‰ÁŽZ‚µ‚Ä‚é‚©‚çALU‚Åˆ—‚µ‚½‚¢‚ñ‚¾‚æ‚È‚ –³—‚¾‚¯‚Ç‚—
                         rs[rd_addr] <= pc + 32'd4;
+                    end
+                `LUI,`AUIPC    :
+                    begin
+                        rs[rd_addr] <= alu_out;
                     end
             endcase
         end
