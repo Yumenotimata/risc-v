@@ -28,6 +28,9 @@ module startup;
             for(i=0;i<31;i++) begin
                 $dumpvars(2,core.rs[i]);
             end
+            for(i=0;i<31;i++) begin
+                $dumpvars(3,core.csr[i]);
+            end
         end
 
     initial

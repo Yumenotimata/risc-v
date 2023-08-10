@@ -11,6 +11,7 @@ module Core(
 
     //Register
     reg [31:0] rs [0:31];
+    reg [31:0] csr [0:4095];
 
     integer i;
     initial begin
@@ -18,6 +19,9 @@ module Core(
         pc <= 32'b0;
         for(i=0;i<32;i++) begin
             rs[i] <= i;
+        end
+        for(i=0;i<4095;i++) begin
+            csr[i] <= i;
         end
     end
 
@@ -62,6 +66,9 @@ module Core(
     wire [31:0] imm_j_sext = {{11{imm_j[20]}},imm_j};
     wire [19:0] imm_u = memory_read_data[31:12];
     wire [31:0] imm_u_shifted_sext = {imm_u,{12'b0}};
+    wire [19:0] csr_addr = memory_read_data[31:20];
+    wire [4:0] imm_z = memory_read_data[19:15];
+    wire [31:0] imm_z_uext = {27'b0,imm_z};
 
     always @(posedge clk) begin
         if((stage == `WB) || rst) begin
@@ -158,6 +165,14 @@ module Core(
                 `JALR   :   alu_out <= (rs[rs1_addr] + imm_i_sext) & (~32'b1);
                 `LUI    :   alu_out <= imm_u_shifted_sext;
                 `AUIPC  :   alu_out <= pc + imm_u_shifted_sext;
+                //CSR命令のレジスタライトバックってCSRレジスタに書き込んだ後のデータなのか、書き込む前のデータなのかわからん
+                //けど書き込み前のCSRレジスタのデータをライトバックしても意味ないから多分CSRに書き込むのが先なはず
+                `CSRRW  :   alu_out <= rs[rs1_addr];
+                `CSRRWI :   alu_out <= imm_z_uext;
+                `CSRRS  :   alu_out <= csr[csr_addr] | rs[rs1_addr];
+                `CSRRSI :   alu_out <= csr[csr_addr] | imm_z_uext;
+                `CSRRC  :   alu_out <= csr[csr_addr] & (~rs[rs1_addr]);
+                `CSRRCI :   alu_out <= csr[csr_addr] & (~imm_z_uext);
             endcase
         end
     endtask
@@ -175,6 +190,10 @@ module Core(
                         memory_write_data <= rs2;
                         memory_wen <= `MEM_WRITE;
                     end
+                `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI    :
+                    begin
+                        csr[csr_addr] <= alu_out;
+                    end    
             endcase
             #1 memory_d_load <= `MEM_UNLOAD;
             #1 memory_wen <= `MEM_UNWRITE;
@@ -206,6 +225,10 @@ module Core(
                 `LUI,`AUIPC    :
                     begin
                         rs[rd_addr] <= alu_out;
+                    end
+                `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI    :
+                    begin
+                        rs[rd_addr] <= csr[csr_addr];
                     end
             endcase
         end
