@@ -4,7 +4,7 @@
 module startup;
 
     parameter step = 10;
-    parameter ticks = 40;
+    parameter ticks = 5000;
 
     reg clk;
     reg rst;
@@ -15,6 +15,7 @@ module startup;
         );
     initial begin
         $readmemh("memory.hex",core.memory.m,16'h0,16'hffff);
+        //$readmemh("mem.hex",core.memory.m,16'h0,16'hffff);
     end
 
     integer i;

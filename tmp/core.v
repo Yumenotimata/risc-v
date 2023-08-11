@@ -17,12 +17,13 @@ module Core(
     initial begin
         stage <= `IF;
         pc <= 32'b0;
-        for(i=0;i<32;i++) begin
-            rs[i] <= i;
-        end
-        for(i=0;i<4095;i++) begin
-            csr[i] <= i;
-        end
+        // for(i=0;i<32;i++) begin
+            // rs[i] <= i;
+        // end
+        // for(i=0;i<4095;i++) begin
+            // csr[i] <= i;
+        // end
+        //rs[0] = 32'b1;
     end
 
     reg [31:0] alu_out;
@@ -60,7 +61,7 @@ module Core(
     wire [31:0] imm_i_sext = {{20{imm_i[11]}},imm_i};
     wire [11:0] imm_s = {memory_read_data[31:25],memory_read_data[11:7]};
     wire [31:0] imm_s_sext = {{20{imm_s[11]}},imm_s};
-    wire[12:0] imm_b = {memory_read_data[31],memory_read_data[7],{memory_read_data[30:25]},{memory_read_data[11:8]},{1'b0}};
+    wire[12:0] imm_b = {memory_read_data[31],memory_read_data[7],memory_read_data[30:25],memory_read_data[11:8],1'b0};
     wire [31:0] imm_b_sext = {{19{imm_b[12]}},imm_b};
     wire [20:0] imm_j = {memory_read_data[31],memory_read_data[19:12],memory_read_data[20],memory_read_data[30:21],{1'b0}};
     wire [31:0] imm_j_sext = {{11{imm_j[20]}},imm_j};
@@ -193,6 +194,10 @@ module Core(
                 `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI    :
                     begin
                         csr[csr_addr] <= alu_out;
+                    end
+                `ECALL      :
+                    begin
+                        csr[12'h342] <= 32'd11;
                     end    
             endcase
             #1 memory_d_load <= `MEM_UNLOAD;
@@ -229,6 +234,11 @@ module Core(
                 `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI    :
                     begin
                         rs[rd_addr] <= csr[csr_addr];
+                    end
+                `ECALL      :
+                    begin
+                        jmp_flag <= 1'b01;
+                        jmp <= csr[12'h305];
                     end
             endcase
         end
