@@ -5,7 +5,7 @@ module startup;
 
     parameter step = 10;
     parameter ticks = 5000;
-    parameter memory_hex = "memory.hex";
+    parameter memory_hex = "build/rv32mi-p-ma_addr.hex"
 
     reg clk;
     reg rst;
