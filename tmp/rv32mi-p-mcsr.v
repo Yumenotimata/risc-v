@@ -5,7 +5,8 @@ module startup;
 
     parameter step = 10;
     parameter ticks = 5000;
-    parameter memory_hex = "build/rv32mi-p-mcsr.hex";
+    parameter memory_hex = "build/riscv-tests-hex/rv32mi-p-mcsr.hex";
+    parameter result_file_path = "result/rv32mi-p-mcsr.txt";
 
     reg clk;
     reg rst;
@@ -22,7 +23,7 @@ module startup;
     integer i;
     initial
         begin
-            $dumpfile("wave.vcd");
+            $dumpfile("vcd/rv32mi-p-mcsr.vcd");
             $dumpvars(0,core);
             for(i=0;i<32;i++) begin
                $dumpvars(1,core.memory.m[i]);
@@ -51,9 +52,23 @@ module startup;
             @(posedge clk) rst <= 1'b0;
         end
 
+    integer fp;
+
     initial
        begin
-           repeat (ticks) @(posedge clk);
+           repeat (ticks) begin
+                @(posedge clk);
+                if(core.pc == 32'h44) begin
+                    fp = $fopen(result_file_path);
+                    if(core.rs[3] == 32'b1) begin
+                        $fdisplay(fp,"passed");
+                    end else begin
+                        $fdisplay(fp,"failed");
+                    end
+                    $fclose(fp);
+                    $finish;
+                end
+           end
            $finish;
        end
 

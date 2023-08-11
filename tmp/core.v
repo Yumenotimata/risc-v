@@ -237,7 +237,7 @@ module Core(
                     end
                 `ECALL      :
                     begin
-                        jmp_flag <= 1'b01;
+                        jmp_flag <= 1'b1;
                         jmp <= csr[12'h305];
                     end
             endcase
