@@ -1,5 +1,6 @@
 `include "module/memory.v"
 `include "../inc/instruction.h"
+`include "../inc/consts.h"
 
 module Core(
     input rst,
@@ -10,6 +11,8 @@ module Core(
 reg [31:0] pc = -32'h4;
 reg [31:0] rs [0:31];
 reg [31:0] csr [0:4095];
+reg [31:0] jmp_addr = 32'h0;
+reg jmp_flag = 1'b0;
 integer i;
 initial begin
     for(i=0;i<32;i++) begin
@@ -51,7 +54,12 @@ end
 
 //Instruction Fetch
 always @(posedge clk) begin
-    pc <= pc + 32'h4;
+    if(jmp_flag == 1'b1) begin
+        pc <= jmp_addr;
+        jmp_flag <= 1'b0;
+    end else begin
+        pc <= pc + 32'h4;
+    end
     memory_program_load <= 1'b0;
 end
 
@@ -59,7 +67,11 @@ end
 reg [31:0] if_ie_inst,if_ie_pc;
 
 always @(negedge clk) begin
-    if_ie_inst <= memory_program_data;
+    if(jmp_flag == 1'b1) begin
+        if_ie_inst <= `STALL;
+    end else begin
+        if_ie_inst <= memory_program_data;
+    end
     if_ie_pc <= pc;
 end
 
@@ -75,10 +87,16 @@ reg [31:0] id_ex_rs1_data,id_ex_rs2_data;
 reg [31:0] id_ex_pc,id_ex_inst;
 
 always @(negedge clk) begin
-    id_ex_rs1_data <= id_rs1_data;
-    id_ex_rs2_data <= id_rs2_data;
     id_ex_pc <= if_ie_pc;
-    id_ex_inst <= if_ie_inst;
+    if(jmp_flag == 1'b1) begin
+        id_ex_inst <= `STALL;
+        id_ex_rs1_data <= 32'h0;
+        id_ex_rs2_data <= 32'h0;
+    end else begin
+        id_ex_inst <= if_ie_inst;
+        id_ex_rs1_data <= id_rs1_data;
+        id_ex_rs2_data <= id_rs2_data;
+    end
 end
 
 //Execution
@@ -121,12 +139,12 @@ always @(posedge clk) begin
         `SLTU   :   alu_out <= {(id_ex_rs1_data < id_ex_rs2_data) ? 32'b1 : 32'b0};
         `SLTI   :   alu_out <= {($signed(id_ex_rs1_data) < $signed(id_ex_imm_i_sext)) ? 32'b1 : 32'b0};
         `SLTIU  :   alu_out <= {(id_ex_rs1_data < id_ex_imm_i_sext) ? 32'b1 : 32'b0};
-        `BEQ    :   alu_out <= {(id_ex_rs1_data == id_ex_rs2_data) ? (id_ex_imm_b_sext + id_ex_pc) : 32'b0};
-        `BNE    :   alu_out <= {(id_ex_rs1_data != id_ex_rs2_data) ? (id_ex_imm_b_sext + id_ex_pc) : 32'b0};
-        `BLT    :   alu_out <= {($signed(id_ex_rs1_data) < $signed(id_ex_rs2_data)) ? (id_ex_imm_b_sext + id_ex_pc) : 32'b0};
-        `BGE    :   alu_out <= {($signed(id_ex_rs1_data) >= $signed(id_ex_rs2_data)) ? (id_ex_imm_b_sext + id_ex_pc) : 32'b0};
-        `BLTU   :   alu_out <= {(id_ex_rs1_data < id_ex_rs2_data) ? (id_ex_imm_b_sext + id_ex_pc) : 32'b0};
-        `BGEU   :   alu_out <= {(id_ex_rs1_data >= id_ex_rs2_data) ? (id_ex_imm_b_sext + id_ex_pc) : 32'b0};
+        `BEQ    :   alu_out <= {(id_ex_rs1_data == id_ex_rs2_data) ? (id_ex_imm_b_sext + id_ex_pc) : `UN_MATCH};
+        `BNE    :   alu_out <= {(id_ex_rs1_data != id_ex_rs2_data) ? (id_ex_imm_b_sext + id_ex_pc) : `UN_MATCH};
+        `BLT    :   alu_out <= {($signed(id_ex_rs1_data) < $signed(id_ex_rs2_data)) ? (id_ex_imm_b_sext + id_ex_pc) : `UN_MATCH};
+        `BGE    :   alu_out <= {($signed(id_ex_rs1_data) >= $signed(id_ex_rs2_data)) ? (id_ex_imm_b_sext + id_ex_pc) : `UN_MATCH};
+        `BLTU   :   alu_out <= {(id_ex_rs1_data < id_ex_rs2_data) ? (id_ex_imm_b_sext + id_ex_pc) : `UN_MATCH};
+        `BGEU   :   alu_out <= {(id_ex_rs1_data >= id_ex_rs2_data) ? (id_ex_imm_b_sext + id_ex_pc) : `UN_MATCH};
         `JAL    :   alu_out <= id_ex_pc + id_ex_imm_j_sext;
         `JALR   :   alu_out <= (id_ex_rs1_data + id_ex_imm_i_sext) & (~32'b1);
         `LUI    :   alu_out <= id_ex_imm_u_shifted_sext;
@@ -144,23 +162,40 @@ end
 reg [31:0] ex_mem_pc,ex_mem_inst,ex_mem_alu_out,ex_mem_rs1_data,ex_mem_rs2_data;
 always @(negedge clk) begin
     ex_mem_pc <= id_ex_pc;
-    ex_mem_inst <= id_ex_inst;
     ex_mem_alu_out <= alu_out;
-    ex_mem_rs1_data <= id_ex_rs1_data;
-    ex_mem_rs2_data <= id_ex_rs2_data;
+    if(jmp_flag == 1'b1) begin
+        ex_mem_rs1_data <= 32'h0;
+        ex_mem_rs2_data <= 32'h0;
+        ex_mem_inst <= `STALL;
+    end else begin
+        ex_mem_rs1_data <= id_ex_rs1_data;
+        ex_mem_rs2_data <= id_ex_rs2_data;
+        ex_mem_inst <= id_ex_inst;
+    end
 end
 
 //Memory Access
 always @(posedge clk) begin
-    //casez(ex_mem_inst)
-    //endcase
+    casez(ex_mem_inst)
+        `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU :
+            begin
+                if(ex_mem_alu_out != 32'b0) begin
+                    jmp_flag <= 1'b1;
+                end
+                jmp_addr <= ex_mem_alu_out;
+            end
+    endcase
 end
 
 //MEM-WB Stage Register
 reg [31:0] mem_wb_inst,mem_wb_alu_out;
 
 always @(negedge clk) begin
-    mem_wb_inst <= ex_mem_inst;
+    if(jmp_flag == 1'b1) begin
+        mem_wb_inst <= `STALL;
+    end else begin
+        mem_wb_inst <= ex_mem_inst;
+    end
     mem_wb_alu_out <= ex_mem_alu_out;
 end
 
@@ -177,13 +212,6 @@ always @(posedge clk) begin
         `ADD,`SUB,`ADDI,`AND,`OR,`XOR,`ANDI,`ORI,`XORI,`SLL,`SRL,`SRA,`SLLI,`SRLI,`SRAI,`SLT,`SLTU,`SLTI,`SLTIU :
             begin
                 rs[mem_wb_rd_addr] <= mem_wb_alu_out;
-            end
-        `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU :
-            begin
-                //if(mem_wb_alu_out != 32'b0) begin
-                //    br_flag <= 1'b1;
-                //    br_jmp <= mem_wb_alu_out;
-                //end
             end
         `JAL,`JALR :
             begin
@@ -206,5 +234,6 @@ always @(posedge clk) begin
             end
     endcase
 end
+
 
 endmodule
