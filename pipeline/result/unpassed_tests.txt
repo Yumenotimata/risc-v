@@ -1,0 +1,16 @@
+result/rv32mi-p-csr.txt
+result/rv32si-p-dirty.txt
+result/rv32ui-p-lbu.txt
+result/rv32si-p-sbreak.txt
+result/rv32mi-p-shamt.txt
+result/rv32ui-p-lhu.txt
+result/rv32mi-p-sbreak.txt
+result/rv32ui-p-sb.txt
+result/rv32mi-p-breakpoint.txt
+result/rv32si-p-csr.txt
+result/rv32ui-p-lh.txt
+result/rv32mi-p-illegal.txt
+result/rv32ui-p-fence_i.txt
+result/rv32mi-p-ma_addr.txt
+result/rv32ui-p-lb.txt
+result/rv32ui-p-sh.txt
