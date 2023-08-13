@@ -88,14 +88,12 @@ reg [31:0] id_ex_pc,id_ex_inst;
 
 always @(negedge clk) begin
     id_ex_pc <= if_ie_pc;
+    id_ex_rs1_data <= id_rs1_data;
+    id_ex_rs2_data <= id_rs2_data;
     if(jmp_flag == 1'b1) begin
         id_ex_inst <= `STALL;
-        id_ex_rs1_data <= 32'h0;
-        id_ex_rs2_data <= 32'h0;
     end else begin
         id_ex_inst <= if_ie_inst;
-        id_ex_rs1_data <= id_rs1_data;
-        id_ex_rs2_data <= id_rs2_data;
     end
 end
 
@@ -163,13 +161,11 @@ reg [31:0] ex_mem_pc,ex_mem_inst,ex_mem_alu_out,ex_mem_rs1_data,ex_mem_rs2_data;
 always @(negedge clk) begin
     ex_mem_pc <= id_ex_pc;
     ex_mem_alu_out <= alu_out;
+    ex_mem_rs1_data <= id_ex_rs1_data;
+    ex_mem_rs2_data <= id_ex_rs2_data;
     if(jmp_flag == 1'b1) begin
-        ex_mem_rs1_data <= 32'h0;
-        ex_mem_rs2_data <= 32'h0;
         ex_mem_inst <= `STALL;
     end else begin
-        ex_mem_rs1_data <= id_ex_rs1_data;
-        ex_mem_rs2_data <= id_ex_rs2_data;
         ex_mem_inst <= id_ex_inst;
     end
 end
@@ -183,6 +179,16 @@ always @(posedge clk) begin
                     jmp_flag <= 1'b1;
                 end
                 jmp_addr <= ex_mem_alu_out;
+            end
+        `JAL,`JALR :
+            begin
+                jmp_flag <= 1'b1;
+                jmp_addr <= ex_mem_alu_out;
+            end
+        `ECALL :
+            begin
+                jmp_flag <= 1'b1;
+                jmp_addr <= csr[12'h305];
             end
     endcase
 end
@@ -213,12 +219,6 @@ always @(posedge clk) begin
             begin
                 rs[mem_wb_rd_addr] <= mem_wb_alu_out;
             end
-        `JAL,`JALR :
-            begin
-                //jmp_flag <= 1'b1;
-                //jmp <= mem_wb_alu_out;
-                //rs[rd_addr] <= pc + 32'd4;
-            end
         `LUI,`AUIPC :
             begin
                 rs[mem_wb_rd_addr] <= mem_wb_alu_out;
@@ -226,11 +226,6 @@ always @(posedge clk) begin
         `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI :
             begin
                 rs[mem_wb_rd_addr] <= csr[mem_wb_csr_addr];
-            end
-        `ECALL :
-            begin
-                //jmp_flag <= 1'b1;
-                //jmp <= csr[12'h305];
             end
     endcase
 end
