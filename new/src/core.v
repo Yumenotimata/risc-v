@@ -54,9 +54,9 @@ end
 
 //Instruction Fetch
 always @(posedge clk) begin
-    if(jmp_flag == 1'b1) begin
+    if(jmp_flag == `RESERVE_JMP) begin
         pc <= jmp_addr;
-        jmp_flag <= 1'b0;
+        jmp_flag <= `NO_JMP;
     end else begin
         pc <= pc + 32'h4;
     end
@@ -67,11 +67,7 @@ end
 reg [31:0] if_ie_inst,if_ie_pc;
 
 always @(negedge clk) begin
-    if(jmp_flag == 1'b1) begin
-        if_ie_inst <= `STALL;
-    end else begin
-        if_ie_inst <= memory_program_data;
-    end
+    if_ie_inst <= {(jmp_flag == `RESERVE_JMP) ? `STALL : memory_program_data};
     if_ie_pc <= pc;
 end
 
@@ -90,11 +86,7 @@ always @(negedge clk) begin
     id_ex_pc <= if_ie_pc;
     id_ex_rs1_data <= id_rs1_data;
     id_ex_rs2_data <= id_rs2_data;
-    if(jmp_flag == 1'b1) begin
-        id_ex_inst <= `STALL;
-    end else begin
-        id_ex_inst <= if_ie_inst;
-    end
+    id_ex_inst <= {(jmp_flag == `RESERVE_JMP) ? `STALL : if_ie_inst};
 end
 
 //Execution
@@ -163,11 +155,7 @@ always @(negedge clk) begin
     ex_mem_alu_out <= alu_out;
     ex_mem_rs1_data <= id_ex_rs1_data;
     ex_mem_rs2_data <= id_ex_rs2_data;
-    if(jmp_flag == 1'b1) begin
-        ex_mem_inst <= `STALL;
-    end else begin
-        ex_mem_inst <= id_ex_inst;
-    end
+    ex_mem_inst <= {(jmp_flag == `RESERVE_JMP) ? `STALL : id_ex_inst};
 end
 
 //Memory Access
@@ -176,18 +164,18 @@ always @(posedge clk) begin
         `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU :
             begin
                 if(ex_mem_alu_out != 32'b0) begin
-                    jmp_flag <= 1'b1;
+                    jmp_flag <= `RESERVE_JMP;
                 end
                 jmp_addr <= ex_mem_alu_out;
             end
         `JAL,`JALR :
             begin
-                jmp_flag <= 1'b1;
+                jmp_flag <= `RESERVE_JMP;
                 jmp_addr <= ex_mem_alu_out;
             end
         `ECALL :
             begin
-                jmp_flag <= 1'b1;
+                jmp_flag <= `RESERVE_JMP;
                 jmp_addr <= csr[12'h305];
             end
     endcase
@@ -197,11 +185,7 @@ end
 reg [31:0] mem_wb_inst,mem_wb_alu_out;
 
 always @(negedge clk) begin
-    if(jmp_flag == 1'b1) begin
-        mem_wb_inst <= `STALL;
-    end else begin
-        mem_wb_inst <= ex_mem_inst;
-    end
+    mem_wb_inst <= {(jmp_flag == `RESERVE_JMP) ? `STALL : ex_mem_inst};
     mem_wb_alu_out <= ex_mem_alu_out;
 end
 
