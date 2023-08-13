@@ -17,6 +17,7 @@ integer i;
 initial begin
     for(i=0;i<32;i++) begin
         rs[i] <= 32'h0;
+        //rs[i] <= i;
     end
     for(i=0;i<4096;i++) begin
         csr[i] <= 32'h0;
@@ -61,9 +62,15 @@ always @(posedge clk) begin
     if(jmp_flag == `RESERVE_JMP) begin
         pc <= jmp_addr;
         jmp_flag <= `NO_JMP;
-    end else if(stall_flag == 1'b1) begin
+    end else if(id_mem_stall_flag == 1'b1) begin
         pc <= pc;
-        stall_flag <= 1'b0;
+        id_mem_stall_flag <= 1'b0;
+    end else if(id_ex_stall_flag == 2'b1) begin
+        pc <= pc;
+        id_ex_stall_flag <= 2'd2;
+    end else if(id_ex_stall_flag == 2'd2) begin
+        pc <= pc;
+        id_ex_stall_flag <= 2'd0;
     end else begin
         pc <= pc + 32'h4;
     end
@@ -76,89 +83,60 @@ reg [31:0] if_ie_inst,if_ie_pc;
 always @(negedge clk) begin
     if(jmp_flag == `RESERVE_JMP) begin
         if_ie_inst <= `STALL;
-    end else if(stall_flag == 1'b1) begin
+    end else if(id_mem_stall_flag == 1'b1) begin
         if_ie_inst <= if_ie_inst;
+        if_ie_pc <= if_ie_pc;
+    end else if(id_ex_stall_flag == 2'd1) begin
+        if_ie_inst <= if_ie_inst;
+        if_ie_pc <= if_ie_pc;
+    end else if(id_ex_stall_flag == 2'd2) begin
+        if_ie_inst <= if_ie_inst;
+        if_ie_pc <= if_ie_pc;
     end else begin
         if_ie_inst <= memory_program_data;
+        if_ie_pc <= pc;
     end
-    if_ie_pc <= pc;
+    
 end
 
 //Instruction Decode
 reg [31:0] id_rs1_data,id_rs2_data;
-reg stall_flag = 1'b0; 
+reg stall_flag = 1'b0;
+reg [1:0] id_ex_stall_flag = 2'd0;
+reg id_mem_stall_flag = 1'b0;
+
 wire [4:0] id_rs1_addr = if_ie_inst[19:15];
 wire [4:0] id_rs2_addr = if_ie_inst[24:20];
-reg [4:0] id_rs1_addr_b,id_rs2_addr_b;
 
 always @(posedge clk) begin
     //for data hazard
-    id_rs1_addr_b <= if_ie_inst[19:15];
-    id_rs2_addr_b <= if_ie_inst[19:15];
-    if((id_rs1_addr == ex_mem_rd_addr) || (id_rs2_addr == ex_mem_rd_addr) || (id_rs1_addr == id_ex_rd_addr) || (id_rs2_addr == id_ex_rd_addr)) begin
-        casez(ex_mem_inst)
-            `LW,`ADD,`SUB,`ADDI,`AND,`OR,`XOR,`ANDI,`ORI,`XORI,`SLL,`SRL,`SRA,`SLLI,`SRLI,`SRAI,`SLT,`SLTU,`SLTI,`SLTIU,`LUI,`AUIPC,`CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI : 
-                begin
-                    stall_flag <= 1'b1;
-                end
-            default : stall_flag <= 1'b0;
-        endcase
-        casez(id_ex_inst)
-            `LW,`ADD,`SUB,`ADDI,`AND,`OR,`XOR,`ANDI,`ORI,`XORI,`SLL,`SRL,`SRA,`SLLI,`SRLI,`SRAI,`SLT,`SLTU,`SLTI,`SLTIU,`LUI,`AUIPC,`CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI : 
-                begin
-                    stall_flag <= 1'b1;
-                end
-            default : stall_flag <= 1'b0;
-        endcase
+    if(((id_rs1_addr == ex_mem_rd_addr) || (id_rs2_addr == ex_mem_rd_addr))  && (id_ex_stall_flag == 2'd0) && (if_ie_inst != `STALL) && (id_ex_inst != `STALL)) begin
+        id_mem_stall_flag <= 1'b1;
+    end
+    if(((id_rs1_addr == id_ex_rd_addr) || (id_rs2_addr == id_ex_rd_addr))  && (if_ie_inst != `STALL) && (id_ex_inst != `STALL)) begin
+        id_ex_stall_flag <= 2'd1;
     end
     //ここ、命令によってはレジスタロードがなくても読み込むレジスタ番号が重複する場合がある
     //x0レジスタの値をフォワーディングする場合、alu_outはゼロでない可能性がある
     if(id_rs1_addr == mem_wb_rd_addr) begin
-        casez(mem_wb_inst)
-            `LW :
-                begin   
-                    id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_memory_read_data : 32'h0};
-                end
-            `ADD,`SUB,`ADDI,`AND,`OR,`XOR,`ANDI,`ORI,`XORI,`SLL,`SRL,`SRA,`SLLI,`SRLI,`SRAI,`SLT,`SLTU,`SLTI,`SLTIU :
-                begin
-                    id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
-                end
-            `LUI,`AUIPC :
-                begin
-                    id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
-                end
-            `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI :
-                begin
-                    id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
-                end
-        endcase
+        if(mem_wb_inst == `LW) begin
+            id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_memory_read_data : 32'h0};
+        end else begin
+            id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_alu_out : 32'h0};        
+        end
     end else begin
         id_rs1_data <= rs[id_rs1_addr];
     end
 
     if(id_rs2_addr == mem_wb_rd_addr) begin
-        casez(mem_wb_inst)
-            `LW :
-                begin   
-                    id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_memory_read_data : 32'h0};
-                end
-            `ADD,`SUB,`ADDI,`AND,`OR,`XOR,`ANDI,`ORI,`XORI,`SLL,`SRL,`SRA,`SLLI,`SRLI,`SRAI,`SLT,`SLTU,`SLTI,`SLT :
-                begin
-                    id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
-                end
-            `LUI,`AUIPC :
-                begin
-                    id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
-                end
-            `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI :
-                begin
-                    id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
-                end
-        endcase
+        if(mem_wb_inst == `LW) begin
+            id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_memory_read_data : 32'h0};
+        end else begin
+            id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_alu_out : 32'h0};        
+        end
     end else begin
         id_rs2_data <= rs[id_rs2_addr];
     end
-
 end
 
 //ID_EX Stage Register
@@ -167,14 +145,27 @@ reg [31:0] id_ex_pc,id_ex_inst;
 
 always @(negedge clk) begin
     id_ex_pc <= if_ie_pc;
-    id_ex_rs1_data <= id_rs1_data;
-    id_ex_rs2_data <= id_rs2_data;
+    
+
     if(jmp_flag == `RESERVE_JMP) begin
         id_ex_inst <= `STALL;
-    end else if(stall_flag == 1'b1) begin
+        //これもストール処理
+        id_ex_rs1_data <= 32'b0;
+        id_ex_rs2_data <= 32'b0;
+    end else if(id_mem_stall_flag == 1'b1) begin
+        id_ex_inst <= id_ex_inst;
+        id_ex_rs2_data <= id_ex_rs2_data;
+        id_ex_rs1_data <= id_ex_rs1_data;
+    end else if(id_ex_stall_flag == 2'd1) begin
         id_ex_inst <= `STALL;
+        //これもストール処理
+        id_ex_rs1_data <= 32'b0;
+    end else if(id_ex_stall_flag == 2'd2) begin
+        id_ex_inst <= id_ex_inst;
     end else begin
         id_ex_inst <= if_ie_inst;
+        id_ex_rs1_data <= id_rs1_data;
+        id_ex_rs2_data <= id_rs2_data;
     end
 end
 
@@ -239,14 +230,19 @@ end
 
 //EX_MEM Stage Register
 reg [31:0] ex_mem_pc,ex_mem_inst,ex_mem_alu_out,ex_mem_rs1_data,ex_mem_rs2_data;
-wire [5:0] ex_mem_rd_addr = ex_mem_inst[11:7];
+wire [4:0] ex_mem_rd_addr = ex_mem_inst[11:7];
 
 always @(negedge clk) begin
     ex_mem_pc <= id_ex_pc;
     ex_mem_alu_out <= alu_out;
     ex_mem_rs1_data <= id_ex_rs1_data;
     ex_mem_rs2_data <= id_ex_rs2_data;
-    ex_mem_inst <= {(jmp_flag == `RESERVE_JMP) ? `STALL : id_ex_inst};
+    //ex_mem_inst <= {(jmp_flag == `RESERVE_JMP) ? `STALL : id_ex_inst};
+    if(jmp_flag == `RESERVE_JMP) begin
+        ex_mem_inst <= `STALL;
+    end else begin
+        ex_mem_inst <= id_ex_inst;
+    end
 end
 
 //Memory Access
@@ -262,10 +258,16 @@ always @(posedge clk) begin
             begin
                 memory_wen <= `MEM_WRITE;
             end
+        `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI :
+            begin
+                csr[ex_mem_csr_addr] <= ex_mem_alu_out;
+            end
         `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU :
             begin
                 if(ex_mem_alu_out != 32'b0) begin
                     jmp_flag <= `RESERVE_JMP;
+                    id_ex_stall_flag <= 2'd0;
+                    id_mem_stall_flag <= 1'd0;
                 end
                 jmp_addr <= ex_mem_alu_out;
             end
@@ -273,15 +275,17 @@ always @(posedge clk) begin
             begin
                 jmp_flag <= `RESERVE_JMP;
                 jmp_addr <= ex_mem_alu_out;
+                id_ex_stall_flag <= 2'd0;
+                id_mem_stall_flag <= 1'd0;
             end
         `ECALL :
             begin
                 jmp_flag <= `RESERVE_JMP;
+                id_ex_stall_flag <= 2'd0;
+                id_mem_stall_flag <= 1'd0;
+                //ここハザード発生してない？
                 jmp_addr <= csr[12'h305];
-            end
-        `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI :
-            begin
-                csr[ex_mem_csr_addr] <= ex_mem_alu_out;
+                csr[12'h342] <= 32'd11;
             end
     endcase
 end
