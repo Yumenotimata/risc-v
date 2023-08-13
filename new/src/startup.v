@@ -4,7 +4,7 @@
 module startup;
 
     parameter step = 10;
-    parameter ticks = 30;
+    parameter ticks = 5000;
     parameter memory_hex = "module/memory.hex";
     parameter result_file_path = "";
 
