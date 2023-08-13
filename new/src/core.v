@@ -119,7 +119,7 @@ always @(posedge clk) begin
     //ここ、命令によってはレジスタロードがなくても読み込むレジスタ番号が重複する場合がある
     //x0レジスタの値をフォワーディングする場合、alu_outはゼロでない可能性がある
     if(id_rs1_addr == mem_wb_rd_addr) begin
-        if(mem_wb_inst == `LW) begin
+        if((wb_inst == `LW) || (mem_wb_inst == `LW)) begin
             id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_memory_read_data : 32'h0};
         end else begin
             id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_alu_out : 32'h0};        
@@ -129,7 +129,7 @@ always @(posedge clk) begin
     end
 
     if(id_rs2_addr == mem_wb_rd_addr) begin
-        if(mem_wb_inst == `LW) begin
+        if((wb_inst == `LW) || (mem_wb_inst == `LW)) begin
             id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_memory_read_data : 32'h0};
         end else begin
             id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_alu_out : 32'h0};        
@@ -152,16 +152,16 @@ always @(negedge clk) begin
         //これもストール処理
         id_ex_rs1_data <= 32'b0;
         id_ex_rs2_data <= 32'b0;
+    end else if(id_ex_stall_flag == 2'd1) begin
+        id_ex_inst <= `STALL;
+        //これもストール処理
+        //id_ex_rs1_data <= 32'b0;
+    end else if(id_ex_stall_flag == 2'd2) begin
+        id_ex_inst <= id_ex_inst;
     end else if(id_mem_stall_flag == 1'b1) begin
         id_ex_inst <= id_ex_inst;
         id_ex_rs2_data <= id_ex_rs2_data;
         id_ex_rs1_data <= id_ex_rs1_data;
-    end else if(id_ex_stall_flag == 2'd1) begin
-        id_ex_inst <= `STALL;
-        //これもストール処理
-        id_ex_rs1_data <= 32'b0;
-    end else if(id_ex_stall_flag == 2'd2) begin
-        id_ex_inst <= id_ex_inst;
     end else begin
         id_ex_inst <= if_ie_inst;
         id_ex_rs1_data <= id_rs1_data;
@@ -297,6 +297,11 @@ always @(negedge clk) begin
     mem_wb_inst <= {(jmp_flag == `RESERVE_JMP) ? `STALL : ex_mem_inst};
     mem_wb_alu_out <= ex_mem_alu_out;
     mem_wb_memory_read_data <= memory_read_data;
+end
+
+reg [31:0] wb_inst;
+always @(negedge clk) begin
+    wb_inst <= mem_wb_inst;
 end
 
 //Write Back
