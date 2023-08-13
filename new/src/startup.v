@@ -59,16 +59,16 @@ module startup;
        begin
            repeat (ticks) begin
                 @(posedge clk);
-                //if(core.pc == 32'h44) begin
-                //    fp = $fopen(result_file_path);
-                //    if(core.rs[3] == 32'b1) begin
-                //        $fdisplay(fp,"passed");
-                //    end else begin
-                //        $fdisplay(fp,"failed");
-                 //   end
-                 //   $fclose(fp);
-                 //   $finish;
-                //end
+                if(core.pc == 32'h44) begin
+                   fp = $fopen(result_file_path);
+                   if(core.rs[3] == 32'b1) begin
+                       $fdisplay(fp,"passed");
+                   end else begin
+                       $fdisplay(fp,"failed");
+                   end
+                   $fclose(fp);
+                   $finish;
+                end
            end
            $finish;
        end
