@@ -33,6 +33,8 @@ module startup;
             for(i=0;i<31;i++) begin
             //    $dumpvars(3,core.csr[i]);
             end
+            $dumpvars(3,core.csr[12'h305]);
+            $dumpvars(4,core.csr[305]);
         end
 
     initial

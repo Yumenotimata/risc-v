@@ -122,16 +122,14 @@ always @(posedge clk) begin
             `ADD,`SUB,`ADDI,`AND,`OR,`XOR,`ANDI,`ORI,`XORI,`SLL,`SRL,`SRA,`SLLI,`SRLI,`SRAI,`SLT,`SLTU,`SLTI,`SLTIU :
                 begin
                     id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
-                    id_rs1_data <= mem_wb_alu_out;
                 end
             `LUI,`AUIPC :
                 begin
                     id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
-                    id_rs1_data <= mem_wb_alu_out;
                 end
             `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI :
                 begin
-                    id_rs1_data <= {(id_rs1_addr != 5'h0) ? csr[mem_wb_csr_addr] : 32'h0};
+                    id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
                 end
         endcase
     end else begin
@@ -142,19 +140,19 @@ always @(posedge clk) begin
         casez(mem_wb_inst)
             `LW :
                 begin   
-                    id_rs2_data <= mem_wb_memory_read_data;
+                    id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_memory_read_data : 32'h0};
                 end
             `ADD,`SUB,`ADDI,`AND,`OR,`XOR,`ANDI,`ORI,`XORI,`SLL,`SRL,`SRA,`SLLI,`SRLI,`SRAI,`SLT,`SLTU,`SLTI,`SLT :
                 begin
-                    id_rs2_data <= mem_wb_alu_out;
+                    id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
                 end
             `LUI,`AUIPC :
                 begin
-                    id_rs2_data <= mem_wb_alu_out;
+                    id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
                 end
             `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI :
                 begin
-                    id_rs2_data <= csr[mem_wb_csr_addr];
+                    id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_alu_out : 32'h0};
                 end
         endcase
     end else begin
@@ -252,6 +250,7 @@ always @(negedge clk) begin
 end
 
 //Memory Access
+wire [19:0] ex_mem_csr_addr = ex_mem_inst[31:20];
 
 always @(posedge clk) begin
     casez(ex_mem_inst)
@@ -279,6 +278,10 @@ always @(posedge clk) begin
             begin
                 jmp_flag <= `RESERVE_JMP;
                 jmp_addr <= csr[12'h305];
+            end
+        `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI :
+            begin
+                csr[ex_mem_csr_addr] <= ex_mem_alu_out;
             end
     endcase
 end
