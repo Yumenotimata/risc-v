@@ -66,10 +66,11 @@ module startup;
                    end else begin
                        $fdisplay(fp,"failed");
                    end
-                   $fclose(fp);
-                   $finish;
+                   //$fclose(fp);
+                   //$finish;
                 end
            end
+           $fclose(fp);
            $finish;
        end
 

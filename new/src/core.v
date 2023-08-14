@@ -254,36 +254,11 @@ always @(posedge clk) begin
             begin
                 csr[ex_mem_csr_addr] <= ex_mem_alu_out;
             end
-        `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU :
-            begin
-                if(ex_mem_alu_out != 32'b0) begin
-                    jmp_flag <= `RESERVE_JMP;
-                    id_ex_stall_flag <= 2'd0;
-                    id_mem_stall_flag <= 1'd0;
-                end
-                jmp_addr <= ex_mem_alu_out;
-            end
-        `JAL,`JALR :
-            begin
-                jmp_flag <= `RESERVE_JMP;
-                jmp_addr <= ex_mem_alu_out;
-                id_ex_stall_flag <= 2'd0;
-                id_mem_stall_flag <= 1'd0;
-            end
-        `ECALL :
-            begin
-                jmp_flag <= `RESERVE_JMP;
-                id_ex_stall_flag <= 2'd0;
-                id_mem_stall_flag <= 1'd0;
-                //ここハザード発生してない？
-                jmp_addr <= csr[12'h305];
-                csr[12'h342] <= 32'd11;
-            end
     endcase
 end
 
 //MEM-WB Stage Register
-reg [31:0] mem_wb_inst,mem_wb_alu_out,mem_wb_memory_read_data;
+reg [31:0] mem_wb_inst,mem_wb_alu_out,mem_wb_memory_read_data,mem_wb_pc;
 
 always @(negedge clk) begin
     mem_wb_inst <= {(jmp_flag == `RESERVE_JMP) ? `STALL : ex_mem_inst};
@@ -292,12 +267,9 @@ always @(negedge clk) begin
     end else begin
         mem_wb_alu_out <= ex_mem_alu_out;
     end
+    mem_wb_pc <= ex_mem_pc;
 end
 
-reg [31:0] wb_inst;
-always @(negedge clk) begin
-    wb_inst <= mem_wb_inst;
-end
 
 //Write Back
 wire [4:0] mem_wb_rd_addr = mem_wb_inst[11:7];
@@ -320,6 +292,32 @@ always @(posedge clk) begin
         `CSRRW,`CSRRWI,`CSRRS,`CSRRSI,`CSRRC,`CSRRCI :
             begin
                 rs[mem_wb_rd_addr] <= csr[mem_wb_csr_addr];
+            end
+        `BEQ,`BNE,`BLT,`BGE,`BLTU,`BGEU :
+            begin
+                if(mem_wb_alu_out != 32'b0) begin
+                    jmp_flag <= `RESERVE_JMP;
+                    id_ex_stall_flag <= 2'd0;
+                    id_mem_stall_flag <= 1'd0;
+                end
+                jmp_addr <= mem_wb_alu_out;
+            end
+        `JAL,`JALR :
+            begin
+                jmp_flag <= `RESERVE_JMP;
+                jmp_addr <= mem_wb_alu_out;
+                id_ex_stall_flag <= 2'd0;
+                id_mem_stall_flag <= 1'd0;
+                rs[mem_wb_rd_addr] <= mem_wb_pc + 32'h4;
+            end
+        `ECALL :
+            begin
+                jmp_flag <= `RESERVE_JMP;
+                id_ex_stall_flag <= 2'd0;
+                id_mem_stall_flag <= 1'd0;
+        //ここハザード発生してない？
+                jmp_addr <= csr[12'h305];
+                csr[12'h342] <= 32'd11;
             end
     endcase
 end

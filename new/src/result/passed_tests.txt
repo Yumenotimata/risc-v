@@ -19,9 +19,12 @@ result/rv32ui-p-sltiu.txt
 result/rv32si-p-wfi.txt
 result/rv32ui-p-simple.txt
 result/rv32ui-p-add.txt
+result/rv32ui-p-jal.txt
 result/rv32si-p-scall.txt
 result/rv32ui-p-sll.txt
+result/rv32ui-p-auipc.txt
 result/rv32ui-p-srl.txt
+result/rv32ui-p-jalr.txt
 result/rv32ui-p-srli.txt
 result/rv32ui-p-bne.txt
 result/rv32ui-p-beq.txt
