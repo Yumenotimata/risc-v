@@ -119,21 +119,13 @@ always @(posedge clk) begin
     //ここ、命令によってはレジスタロードがなくても読み込むレジスタ番号が重複する場合がある
     //x0レジスタの値をフォワーディングする場合、alu_outはゼロでない可能性がある
     if(id_rs1_addr == mem_wb_rd_addr) begin
-        if((wb_inst == `LW) || (mem_wb_inst == `LW)) begin
-            id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_memory_read_data : 32'h0};
-        end else begin
-            id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_alu_out : 32'h0};        
-        end
+        id_rs1_data <= {(id_rs1_addr != 5'h0) ? mem_wb_alu_out : 32'h0};     
     end else begin
         id_rs1_data <= rs[id_rs1_addr];
     end
 
     if(id_rs2_addr == mem_wb_rd_addr) begin
-        if((wb_inst == `LW) || (mem_wb_inst == `LW)) begin
-            id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_memory_read_data : 32'h0};
-        end else begin
-            id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_alu_out : 32'h0};        
-        end
+        id_rs2_data <= {(id_rs2_addr != 5'h0) ? mem_wb_alu_out : 32'h0};        
     end else begin
         id_rs2_data <= rs[id_rs2_addr];
     end
@@ -295,8 +287,11 @@ reg [31:0] mem_wb_inst,mem_wb_alu_out,mem_wb_memory_read_data;
 
 always @(negedge clk) begin
     mem_wb_inst <= {(jmp_flag == `RESERVE_JMP) ? `STALL : ex_mem_inst};
-    mem_wb_alu_out <= ex_mem_alu_out;
-    mem_wb_memory_read_data <= memory_read_data;
+    if(mem_wb_inst == `LW) begin
+        mem_wb_alu_out <= memory_read_data;
+    end else begin
+        mem_wb_alu_out <= ex_mem_alu_out;
+    end
 end
 
 reg [31:0] wb_inst;

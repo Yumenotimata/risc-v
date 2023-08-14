@@ -4,10 +4,8 @@ result/rv32ui-p-lbu.txt
 result/rv32si-p-sbreak.txt
 result/rv32mi-p-shamt.txt
 result/rv32ui-p-lhu.txt
-result/rv32ui-p-lw.txt
 result/rv32mi-p-sbreak.txt
 result/rv32ui-p-sb.txt
-result/rv32ui-p-sw.txt
 result/rv32ui-p-jal.txt
 result/rv32mi-p-breakpoint.txt
 result/rv32ui-p-auipc.txt
