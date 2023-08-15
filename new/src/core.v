@@ -111,10 +111,16 @@ wire [4:0] id_rs2_addr = if_ie_inst[24:20];
 always @(posedge clk) begin
     //for data hazard
     if(((id_rs1_addr == ex_mem_rd_addr) || (id_rs2_addr == ex_mem_rd_addr))  && (id_ex_stall_flag == 2'd0) && (if_ie_inst != `STALL) && (id_ex_inst != `STALL)) begin
-        id_mem_stall_flag <= 1'b1;
+        if(ex_mem_inst != `BLTU) begin
+            id_mem_stall_flag <= 1'b1;
+        end
     end
     if(((id_rs1_addr == id_ex_rd_addr) || (id_rs2_addr == id_ex_rd_addr))  && (if_ie_inst != `STALL) && (id_ex_inst != `STALL)) begin
-        id_ex_stall_flag <= 2'd1;
+        //ここでは簡略化しているが，実際にはレジスタライトバックがある命令とのデータハザードのみに対応すべき
+        //例えば,BLTU,BGEU命令ではレジスタライトバックを行わないが、命令セットの関係上不必要なデータハザードを発生させる場合がある。
+        if((id_ex_inst != `BLTU) && (id_ex_inst != `BGEU)) begin
+            id_ex_stall_flag <= 2'd1;
+        end
     end
     //ここ、命令によってはレジスタロードがなくても読み込むレジスタ番号が重複する場合がある
     //x0レジスタの値をフォワーディングする場合、alu_outはゼロでない可能性がある
@@ -137,8 +143,6 @@ reg [31:0] id_ex_pc,id_ex_inst;
 
 always @(negedge clk) begin
     id_ex_pc <= if_ie_pc;
-    
-
     if(jmp_flag == `RESERVE_JMP) begin
         id_ex_inst <= `STALL;
         //これもストール処理
@@ -148,8 +152,12 @@ always @(negedge clk) begin
         id_ex_inst <= `STALL;
         //これもストール処理
         //id_ex_rs1_data <= 32'b0;
+        //id_ex_rs1_data <= 32'b0;
+        //id_ex_rs2_data <= 32'b0;
     end else if(id_ex_stall_flag == 2'd2) begin
         id_ex_inst <= id_ex_inst;
+        id_ex_rs2_data <= id_ex_rs2_data;
+        id_ex_rs1_data <= id_ex_rs1_data;
     end else if(id_mem_stall_flag == 1'b1) begin
         id_ex_inst <= id_ex_inst;
         id_ex_rs2_data <= id_ex_rs2_data;
@@ -315,7 +323,6 @@ always @(posedge clk) begin
                 jmp_flag <= `RESERVE_JMP;
                 id_ex_stall_flag <= 2'd0;
                 id_mem_stall_flag <= 1'd0;
-        //ここハザード発生してない？
                 jmp_addr <= csr[12'h305];
                 csr[12'h342] <= 32'd11;
             end

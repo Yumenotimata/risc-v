@@ -28,6 +28,8 @@ result/rv32ui-p-jalr.txt
 result/rv32ui-p-srli.txt
 result/rv32ui-p-bne.txt
 result/rv32ui-p-beq.txt
+result/rv32ui-p-bltu.txt
 result/rv32ui-p-slli.txt
+result/rv32ui-p-bgeu.txt
 result/rv32ui-p-or.txt
 result/rv32ui-p-sub.txt
